@@ -98,7 +98,7 @@ You'll find this function multiple times; choos the one with the correct enpoint
     <table>
       <tr>
         <th>Name</th>
-        <th>Recommend Value</th>
+        <th>Recommended Value</th>
         <th>Description</th>
       </tr>
       <tr>
@@ -130,7 +130,7 @@ You'll find this function multiple times; choos the one with the correct enpoint
     <table>
       <tr>
         <th>Name</th>
-        <th>Recommend Value</th>
+        <th>Recommended Value</th>
         <th>Description</th>
       </tr>
       <tr>
