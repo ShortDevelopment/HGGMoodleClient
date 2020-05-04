@@ -9,7 +9,7 @@ https://docs.moodle.org/dev/Web_service_API_functions <br/>
 ### Paramater Documentation
 https://github.com/moodle/moodle <br/>
 Search for "<i>externallib.php</i>" file<i>s</i>. There you can find the paramteter declaration.<br/>
-You'll find this function multiple times; choos the one with the correct enpoint type (look at the path the function is in).
+You'll find this file multiple times; choos the one with the correct enpoint type (look at the path the function is in).
 
 ## "API" Documentation
 
