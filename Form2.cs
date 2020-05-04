@@ -31,7 +31,15 @@ namespace Test
             client.Encoding = Encoding.UTF8;
             if (Login(textBox1.Text, textBox2.Text))
             {
-                GetKurse();
+                foreach (var kurs in GetKurse())
+                {
+                    textBox3.Text += kurs.FullName + "   " + kurs.Id.ToString() + Environment.NewLine;
+                    textBox5.Text += $"======= \"{kurs.FullName}\" =======" + Environment.NewLine;
+                    textBox5.Text += GetUpdateSince(kurs, DateTime.Now.AddDays(-7.0)) + Environment.NewLine + Environment.NewLine;
+                    textBox5.Text += "==============" + Environment.NewLine;
+                    webBrowser1.DocumentStream = new MemoryStream(Encoding.UTF8.GetBytes(GetCourseContents(kurs)));
+                    return;
+                }
             }
         }
         public WebClient client = new WebClient();
@@ -74,27 +82,38 @@ namespace Test
         }
         private List<KursResult.Kurs> GetKurse()
         {
-            var list = new List<KursResult.Kurs>();
-            var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}&info=core_course_get_enrolled_courses_by_timeline_classification", "[{\"index\":0,\"methodname\":\"core_course_get_enrolled_courses_by_timeline_classification\",\"args\":{\"offset\":0,\"limit\":100,\"classification\":\"all\",\"sort\":\"fullname\"}}]");
+            var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_enrolled_courses_by_timeline_classification\",\"args\":{\"offset\":0,\"limit\":100,\"classification\":\"all\",\"sort\":\"fullname\"}}]");
             //textBox3.Text = SessionKey + data;
             var obj = JsonConvert.DeserializeObject<List<Result<KursResult>>>(data);
             if(obj[0].Error == false)
             {
-                foreach(var kurs in obj[0].Data.Kurse)
-                {
-                    textBox3.Text += kurs.FullName + Environment.NewLine;
-                }
+                return obj[0].Data.Kurse;                
             }
             else
             {
                 throw new Exception();
             }
-            //foreach (var kurs in kurse)
-            //{
-            //    textBox3.Text += kurs + Environment.NewLine + Environment.NewLine;
-            //}
-            return list;
         }
+        private int GetTimestamp(DateTime time)
+        {
+            return (Int32)(time.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+        }
+        private Result<UpdatesResult> GetUpdateSince(KursResult.Kurs kurs, DateTime timestamp)
+        {
+            var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_updates_since\",\"args\":{\"courseid\":" + kurs.Id.ToString() + ",\"since\":" + GetTimestamp(timestamp) + "}}]");
+            return JsonConvert.DeserializeObject<List<Result<UpdatesResult>>>(data)[0];
+        }
+        private string GetCourseContents(KursResult.Kurs kurs)
+        {
+            //var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_courses\",\"args\":{ \"options\": {\"ids\":[297]} }}]");
+            //return data;
+            var res = "<html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><link href=\"https://moodle.hgg-online.de/moodle/theme/yui_combo.php?rollup/3.17.2/yui-moodlesimple-min.css\" rel=\"stylesheet\" type=\"text/css\"><link href=\"https://moodle.hgg-online.de/moodle/theme/styles.php/boost/1588259577_1584654151/all\" rel=\"stylesheet\" type=\"text/css\"></head><body>{0}</body></html>";
+            var html = UploadData(kurs.URL, null);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(html);
+            return string.Format(res, doc.GetElementbyId("region-main").OuterHtml);
+        }
+        #region TypeDefinitions
         [JsonObject()]
         private struct Result<T>
         {
@@ -118,8 +137,37 @@ namespace Test
                 public string URL { get; set; }
                 [JsonProperty("shortname")]
                 public string Name { get; set; }
+                [JsonProperty("id")]
+                public int Id { get; set; }
             }
         }
+        [JsonObject()]
+        public struct UpdatesResult
+        {
+            [JsonProperty("instances")]
+            public List<UpdateInstance> Instances { get; set; }
+            public struct UpdateInstance
+            {
+                [JsonProperty("contextlevel")]
+                public string Type { get; set; }
+                [JsonProperty("id")]
+                public int Id { get; set; }
+                [JsonProperty("updates")]
+                public List<Update> Updates { get; set; }
+                [JsonObject()]
+                public struct Update
+                {
+                    [JsonProperty("name")]
+                    public string Name { get; set; }
+                    [JsonProperty("timeupdated")]
+                    public int Time { get; set; }
+                    [JsonProperty("itemids")]
+                    public List<int> Items { get; set; }
+                }
+            }
+        }
+        #endregion
+        #region Request Functions
         private string UploadData(string url, NameValueCollection postdata, bool json = false)
         {
             try
@@ -138,7 +186,7 @@ namespace Test
                 WebRequest.Create(url); request.KeepAlive = false;
                 request.ProtocolVersion = HttpVersion.Version10;
                 request.Method = "POST";
-                request.CookieContainer = Cookies;
+                request.CookieContainer = Cookies;                
                 if (json)
                 {
                     request.Headers.Add("X-Requested-With", "XMLHttpRequest");
@@ -188,5 +236,6 @@ namespace Test
             }
             catch { return null; }
         }
+        #endregion
     }
 }
