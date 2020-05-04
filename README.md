@@ -17,7 +17,7 @@ You'll find this file multiple times; choos the one with the correct enpoint typ
   <li>
     <b>Get Content of <code>https://{$Host}/moodle/blocks/exa2fa/login/</code></b><br/>
     <b>Extract LoginToken:</b><br/>
-    XPAth: <code>//input[@name='logintoken']</code><br/>
+    XPAth: <code>//input[@name='logintoken']</code> bzw <code>GetElementByName("logintoken")</code><br/>
     Get <code>Value</code> attribute of found <code>HTMLInputElement</code>
   </li>
   <li>
