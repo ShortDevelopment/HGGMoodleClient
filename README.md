@@ -1,6 +1,6 @@
 # HGGMoodleClient
 
-A client written c# that can access the (unoffical) moodle api (even if the administrator has disabled the offical api) using "html-parsing" and json-rpc.
+A client written c# that can access the (unoffical) <a href="https://moodle.org/">moodle</a> api (even if the administrator has disabled the offical api) using "html-parsing" and json-rpc.
 
 ## Moodle Endpoint Documentation
 ### All Functions
