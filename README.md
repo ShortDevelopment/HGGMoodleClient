@@ -89,3 +89,59 @@ You'll find this function multiple times; choos the one with the correct enpoint
     Good luck!
   </li>
 </ol>
+<h2>Interesting functions with parameters</h2>
+<ul>
+  <li>
+    <code>core_course_get_enrolled_courses_by_timeline_classification</code><br/>
+    <i>List all courses (for person)</i><br/>
+    Parameters:<br/>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Recommend Value</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>offset</td>
+        <td>0</td>
+        <td>First index in result</td>
+      </tr>
+      <tr>
+        <td>limit</td>
+        <td>100</td>
+        <td>Max count of courses returned</td>
+      </tr>
+      <tr>
+        <td>classification</td>
+        <td>all</td>
+        <td>???</td>
+      </tr>
+      <tr>
+        <td>sort</td>
+        <td>fullname</td>
+        <td>How to sort result</td>
+      </tr>
+    </table>
+  </li>
+  <li>
+    <code>core_course_get_updates_since</code><br/>
+    <i>Return changes that were made to a course since a specific timestamp</i><br/>
+    Parameters:<br/>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Recommend Value</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>courseid</td>
+        <td></td>
+        <td>Id of course (get with function above)</td>
+      </tr>
+      <tr>
+        <td>since</td>
+        <td></td>
+        <td>Timestamp</td>
+      </tr>
+  </li>
+</ul>
