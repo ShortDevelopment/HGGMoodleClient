@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -17,7 +18,7 @@ using System.Windows.Forms;
 
 namespace Test
 {
-    public partial class Form2 : Form
+    public partial class Form2 : Form //1880
     {
         public Form2()
         {
@@ -26,21 +27,37 @@ namespace Test
         public const string Host = "moodle.hgg-online.de";
         private CookieContainer Cookies { get; set; } = new CookieContainer();
         private string SessionKey;
+        private List<KursResult.Kurs> AllKurse;
+        private WaitDialog WaitDialog = new WaitDialog();
         private void button1_Click(object sender, EventArgs e)
         {
             client.Encoding = Encoding.UTF8;
+            Application.DoEvents();
+            this.Enabled = false;
             if (Login(textBox1.Text, textBox2.Text))
             {
-                foreach (var kurs in GetKurse())
+                AllKurse = GetKurse();
+                foreach (var kurs in AllKurse)
                 {
-                    textBox3.Text += kurs.FullName + "   " + kurs.Id.ToString() + Environment.NewLine;
-                    textBox5.Text += $"======= \"{kurs.FullName}\" =======" + Environment.NewLine;
-                    textBox5.Text += GetUpdateSince(kurs, DateTime.Now.AddDays(-7.0)) + Environment.NewLine + Environment.NewLine;
-                    textBox5.Text += "==============" + Environment.NewLine;
-                    webBrowser1.DocumentStream = new MemoryStream(Encoding.UTF8.GetBytes(GetCourseContents(kurs)));
-                    return;
+                    listBox1.Items.Add(kurs.FullName);
+                    //textBox3.Text += kurs.FullName + "   " + kurs.Id.ToString() + Environment.NewLine;
+                    //textBox5.Text += $"======= \"{kurs.FullName}\" =======" + Environment.NewLine;
+                    //foreach(var user in GetCourseUsers(kurs))
+                    //{
+                    //    textBox5.Text += $"Name: {user.Name}, ID: {user.Id}" + Environment.NewLine;
+                    //}
+                    //textBox5.Text += "==============" + Environment.NewLine;
+                    //webBrowser1.DocumentStream = new MemoryStream(Encoding.UTF8.GetBytes(GetCourseContents(kurs)));
+                    //return;
                 }
+                textBox2.Text = null;                
+                Site2.BringToFront();
             }
+            else
+            {
+                MessageBox.Show("Fehler bei der Anmeldung!" + Environment.NewLine + "Bitte erneut probieren!", "Fehler!", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            }
+            this.Enabled = true;
         }
         public WebClient client = new WebClient();
         private bool Login(string username, string password)
@@ -109,10 +126,85 @@ namespace Test
             //return data;
             var res = "<html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><link href=\"https://moodle.hgg-online.de/moodle/theme/yui_combo.php?rollup/3.17.2/yui-moodlesimple-min.css\" rel=\"stylesheet\" type=\"text/css\"><link href=\"https://moodle.hgg-online.de/moodle/theme/styles.php/boost/1588259577_1584654151/all\" rel=\"stylesheet\" type=\"text/css\"></head><body>{0}</body></html>";
             var html = UploadData(kurs.URL, null);
+            ExtractSessionKey(html);
             var doc = new HtmlAgilityPack.HtmlDocument();
             doc.LoadHtml(html);
             return string.Format(res, doc.GetElementbyId("region-main").OuterHtml);
         }
+        private void SendMessage(int UserId, string msg)
+        {
+            var obj = new MessageSendMethodCall();
+            obj.args = new MessageSendMethodCall.Args();
+            obj.args.messages.Add(new MessageSendMethodCall.Args.msg(UserId, msg));
+            var result = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", JsonConvert.SerializeObject(new object[] { obj }.ToList())); // "[{\"index\":0,\"methodname\":\"core_message_send_instant_messages\",\"args\":{\"messages\":[{\"touserid\":" + UserId.ToString() + ",\"text\":" + msg + "}]}}]");
+            Debug.Print(result);
+            if (((JArray)JsonConvert.DeserializeObject(result))[0]["error"].ToString() == "true")
+            {
+                throw new Exception();
+            }
+        }
+        class MessageSendMethodCall
+        {
+            public int index = 0;
+            public string methodname = "core_message_send_instant_messages";
+            public Args args;
+            public class Args
+            {
+                public List<msg> messages = new List<msg>();
+                public class msg
+                {
+                    public int touserid;
+                    public string text;
+                    public msg(int touserid, string text)
+                    {
+                        this.touserid = touserid;
+                        this.text = text;
+                    }
+                }
+            }
+        }
+        public List<MoodleUser> GetCourseUsers(KursResult.Kurs kurs)
+        {
+            var users = new List<MoodleUser>();
+            var ids = new List<int>();
+            var url = $"https://{Host}/moodle/user/index.php?id={kurs.Id}&perpage=100";
+            var html = UploadData(url, null);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(html);
+            var links = doc.DocumentNode.SelectNodes("//a").Where(x=> x.GetAttributeValue("href", "").Contains("moodle/user/view.php?id="));
+            foreach(HtmlNode link in links)
+            {
+                try
+                {
+                    var name = link.InnerText;
+                    var regex = Regex.Match(link.GetAttributeValue("href", ""), @"moodle\/user\/view\.php\?id=([0-9]+)(.*)course=", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                    if (regex.Success)
+                    {
+                        var id = int.Parse(regex.Groups[1].Value);
+                        if (!ids.Contains(id))
+                        {
+                            ids.Add(id);
+                            users.Add(new MoodleUser(name, id));
+                        }
+                    }
+                }
+                catch { }
+            }
+            ExtractSessionKey(html);
+            return users;
+        }
+
+        public struct MoodleUser
+        {
+            public string Name;
+            public int Id;
+            public MoodleUser(string Name, int Id)
+            {
+                this.Name = Name;
+                this.Id = Id;
+            }
+        }
+
         #region TypeDefinitions
         [JsonObject()]
         private struct Result<T>
@@ -237,5 +329,62 @@ namespace Test
             catch { return null; }
         }
         #endregion
+        private List<MoodleUser> AllUsers;
+        private void listBox1_DoubleClick(object sender, EventArgs e)
+        {
+            if(listBox1.SelectedItem == null) { return; }
+            this.Enabled = false;
+            try
+            {
+                var CurrentKurs = AllKurse.Where(x => x.FullName == (string)listBox1.SelectedItem).ToList()[0];
+                Site3.BringToFront();
+                AllUsers = GetCourseUsers(CurrentKurs);
+                listView1.Items.Clear();
+                foreach (var user in AllUsers)
+                {
+                    var li = new ListViewItem();
+                    li.Text = user.Name;
+                    li.SubItems.Add(user.Id.ToString());
+                    li.Checked = true;
+                    li.Tag = user;
+                    listView1.Items.Add(li);
+                }
+            }
+            catch { }
+            this.Enabled = true;
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            var msg = textBox3.Text;
+            textBox3.Text = "";
+            this.Enabled = false;
+            string result = "Erfolgreich gesendet für:" + Environment.NewLine;
+            string result2 = "Fehler bei:" + Environment.NewLine;
+            string result3 = "";
+            foreach (ListViewItem li in listView1.CheckedItems)
+            {
+                var user = (MoodleUser)li.Tag;
+                try
+                {
+                    SendMessage(user.Id, msg);
+                    result += user.Name + Environment.NewLine;
+                }
+                catch {
+                    result3 += user.Name + Environment.NewLine;
+                }
+            }
+            this.Enabled = true;
+            if (!string.IsNullOrEmpty(result3))
+            {
+                result += result2 + result3;
+            }
+            MessageBox.Show(result);
+        }
+
+        private void Form2_Resize(object sender, EventArgs e)
+        {
+            LoginPanel.Location = new Point(this.Width / 2 - LoginPanel.Width / 2, this.Height / 2 - LoginPanel.Height / 2);
+        }
     }
 }
