@@ -76,10 +76,11 @@ You'll find this file multiple times; choos the one with the correct enpoint typ
     URL:<br/>
     <code>https://{$Host}/moodle/lib/ajax/service.php?sesskey={$SessionKey}</code><br/>
     Body:<br/>
-    <code>[{"index":0,
-      "methodname":"core_course_get_enrolled_courses_by_timeline_classification",
-      "args":{"offset":0,"limit":100,"classification":"all","sort":"fullname"}
-      }]</code>
+    
+```json
+[{"index":0, "methodname":"core_course_get_enrolled_courses_by_timeline_classification", "args" :{"offset":0,"limit":100,"classification":"all","sort":"fullname"}}]
+```
+    
   </li>
   <li>
     <b>Well done!</b><br/>
@@ -122,6 +123,12 @@ You'll find this file multiple times; choos the one with the correct enpoint typ
         <td>How to sort result</td>
       </tr>
     </table>
+    Example body:<br/>
+      
+```json
+[{"index":0, "methodname":"core_course_get_enrolled_courses_by_timeline_classification", "args":{"offset":0, "limit":100, "classification":"all", "sort":"fullname"}}]
+```
+    
   </li>
   <li>
     <code>core_course_get_updates_since</code><br/>
@@ -143,5 +150,53 @@ You'll find this file multiple times; choos the one with the correct enpoint typ
         <td></td>
         <td>Timestamp</td>
       </tr>
+    </table>
+    Example body:<br/>
+      
+```json
+[{"index":0, "methodname":"core_course_get_updates_since", "args":{"courseid": 12345, "since": 1588929434}}]
+```
+    
+  </li>
+  <li>
+    <code>core_message_send_instant_messages</code><br/>
+    <i>Sends message to user (by id):</i><br/>
+    Parameters:<br/>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Recommended Value</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>messages</td>
+        <td></td>
+        <td>Array of beneath structure</td>
+      </tr>
+    </table>
+    <code>messages</code> structure:<br/>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>touserid</td>
+        <td>integer</td>
+        <td>Receiving user id</td>
+      </tr>
+      <tr>
+        <td>text</td>
+        <td>string</td>
+        <td>Message</td>
+      </tr>
+    </table>
+    Example body:<br/>
+      
+```json
+[{"index":0, "methodname":"core_message_send_instant_messages", "args":{"messages":[{"touserid": 12345, "text": "Bye World!" }]}}]
+```
+    
   </li>
 </ul>
