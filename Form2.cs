@@ -143,6 +143,65 @@ namespace Test
                 throw new Exception();
             }
         }
+        private void DownloadCourseData(KursResult.Kurs kurs, string DirectoryPath)
+        {
+            if (!Directory.Exists(DirectoryPath))
+            {
+                throw new DirectoryNotFoundException();
+            }
+            var html = UploadData(kurs.URL, null);
+            ExtractSessionKey(html);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(html);
+            var wc = new WebClient();
+            wc.Headers.Set(HttpRequestHeader.Cookie, Cookies.GetCookieHeader(new Uri(kurs.URL)));
+            var lis = doc.DocumentNode.SelectNodes("//li").Where(x => x.GetAttributeValue("aria-label", null) != null);
+            foreach(HtmlNode li in lis)
+            {
+                var title = li.GetAttributeValue("aria-label", null);
+                if (!string.IsNullOrEmpty(title))
+                {
+                    var dir = Path.Combine(DirectoryPath, ReplaceInvalidChars(title));
+                    Directory.CreateDirectory(dir);
+                    var SubLinks = li.SelectNodes(".//a")?.Where(x => x.GetAttributeValue("href", "").Contains("/mod/") && x.GetAttributeValue("href", "").Contains("/view.php?id="));
+                    if(SubLinks == null)
+                    {
+                        continue;
+                    }
+                    foreach (HtmlNode link in SubLinks)
+                    {
+                        html = UploadData(link.GetAttributeValue("href", ""), null);
+                        ExtractSessionKey(html);
+                        var doc2 = new HtmlAgilityPack.HtmlDocument();
+                        doc2.LoadHtml(html);
+                        var files = doc2.DocumentNode.SelectNodes("//a").Where(x => x.GetAttributeValue("href", "").Contains("/pluginfile.php/"));
+                        var dir2 = dir;
+                        if (files.Count() > 1)
+                        {
+                            dir2 = Path.Combine(dir2, ReplaceInvalidChars(link.InnerText));
+                            Directory.CreateDirectory(dir2);
+                        }
+                        foreach (var file in files)
+                        {
+                            try
+                            {
+                                wc.DownloadFile(file.GetAttributeValue("href", ""), Path.Combine(dir2, file.InnerText));
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Print(ex.Message);
+                            }
+                        }
+                        //https://moodle.hgg-online.de/moodle/pluginfile.php/4366/mod_assign/introattachment/0/4_Writing%20a%20diary%20entry_practice.pdf?forcedownload=1
+                    }
+                }
+            }
+        }
+        public string ReplaceInvalidChars(string filename)
+        {
+            return string.Join(" ", filename.Split(Path.GetInvalidFileNameChars()));
+        }
+
         class MessageSendMethodCall
         {
             public int index = 0;
@@ -330,13 +389,14 @@ namespace Test
         }
         #endregion
         private List<MoodleUser> AllUsers;
+        private KursResult.Kurs CurrentKurs;
         private void listBox1_DoubleClick(object sender, EventArgs e)
         {
             if(listBox1.SelectedItem == null) { return; }
             this.Enabled = false;
             try
             {
-                var CurrentKurs = AllKurse.Where(x => x.FullName == (string)listBox1.SelectedItem).ToList()[0];
+                CurrentKurs = AllKurse.Where(x => x.FullName == (string)listBox1.SelectedItem).ToList()[0];
                 Site3.BringToFront();
                 AllUsers = GetCourseUsers(CurrentKurs);
                 listView1.Items.Clear();
@@ -385,6 +445,16 @@ namespace Test
         private void Form2_Resize(object sender, EventArgs e)
         {
             LoginPanel.Location = new Point(this.Width / 2 - LoginPanel.Width / 2, this.Height / 2 - LoginPanel.Height / 2);
+        }
+
+        private void downloadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var dir = Path.Combine(Application.StartupPath, "download", ReplaceInvalidChars(CurrentKurs.Name));
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            DownloadCourseData(CurrentKurs, dir);
         }
     }
 }

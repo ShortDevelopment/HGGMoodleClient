@@ -1,0 +1,17 @@
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\Moodle.exe.config
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\Moodle.exe
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\Moodle.pdb
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\HtmlAgilityPack.dll
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\Newtonsoft.Json.dll
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\HtmlAgilityPack.pdb
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\HtmlAgilityPack.xml
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\bin\Debug\Newtonsoft.Json.xml
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Moodle Client.csprojAssemblyReference.cache
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Test.Form2.resources
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Test.Properties.Resources.resources
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Test.WaitDialog.resources
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Moodle Client.csproj.GenerateResource.cache
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Moodle Client.csproj.CoreCompileInputs.cache
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Moodle Client.csproj.CopyComplete
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Moodle.exe
+D:\Programmieren\Visual Studio Projects\HausaufgabenServer\Test\obj\Debug\Moodle.pdb
