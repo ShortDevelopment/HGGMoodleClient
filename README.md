@@ -4,6 +4,29 @@ A client written c# that can access the (unoffical) <a href="https://moodle.org/
 <br/>
 You can find the client logic in <a href="Form2.cs">Form2.vb</a>.
 
+## Usage
+<ol>
+  <li>Start Application</li>
+  <li>Enter Username + Password</li>
+</ol>
+<h3>Download kurs content</h3>
+<ol start="3">
+  <li>Choose "Kurs"</li>
+  <li>Klick on "Download" in the top right corner</li>
+</ol>
+<h3>Write a message to everyone in a kurs</h3>
+<ol start="3">
+  <li>Choose "Kurs"</li>
+  <li>Check every user you want to contact</li>
+  <li>Enter message at the bottom</li>
+  <li>Klick the button to submit</li>
+</ol>
+<h3>See (Big!) profile photos</h3>
+<ol start="3">
+  <li>Doubleclick online user</li>
+  <li>Look at (Big!) profile photo</li>
+</ol>
+
 ## Moodle Endpoint Documentation
 ### All Functions
 https://docs.moodle.org/dev/Web_service_API_functions <br/>
