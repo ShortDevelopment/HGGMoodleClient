@@ -50,7 +50,15 @@ namespace Test
                     //webBrowser1.DocumentStream = new MemoryStream(Encoding.UTF8.GetBytes(GetCourseContents(kurs)));
                     //return;
                 }
-                textBox2.Text = null;                
+                textBox2.Text = null;
+                foreach (var user in GetOnlineUsers())
+                {
+                    var listitem = new ListViewItem();
+                    listitem.Text = user.Name;
+                    listitem.SubItems.Add(user.LastOnline);
+                    listitem.Tag = user;
+                    listView2.Items.Add(listitem);
+                }
                 Site2.BringToFront();
             }
             else
@@ -60,7 +68,7 @@ namespace Test
             this.Enabled = true;
         }
         public WebClient client = new WebClient();
-        private bool Login(string username, string password)
+        public bool Login(string username, string password)
         {
             try
             {
@@ -93,11 +101,11 @@ namespace Test
                 return false;
             }
         }
-        private void ExtractSessionKey(string data)
+        public void ExtractSessionKey(string data)
         {
             SessionKey = Regex.Match(data, "\"sesskey\":\"(([a-z]|[0-9])*)\"", RegexOptions.IgnoreCase).Groups[1].Value;
         }
-        private List<KursResult.Kurs> GetKurse()
+        public List<KursResult.Kurs> GetKurse()
         {
             var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_enrolled_courses_by_timeline_classification\",\"args\":{\"offset\":0,\"limit\":100,\"classification\":\"all\",\"sort\":\"fullname\"}}]");
             //textBox3.Text = SessionKey + data;
@@ -111,16 +119,16 @@ namespace Test
                 throw new Exception();
             }
         }
-        private int GetTimestamp(DateTime time)
+        public int GetTimestamp(DateTime time)
         {
             return (Int32)(time.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
         }
-        private Result<UpdatesResult> GetUpdateSince(KursResult.Kurs kurs, DateTime timestamp)
+        public Result<UpdatesResult> GetUpdateSince(KursResult.Kurs kurs, DateTime timestamp)
         {
             var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_updates_since\",\"args\":{\"courseid\":" + kurs.Id.ToString() + ",\"since\":" + GetTimestamp(timestamp) + "}}]");
             return JsonConvert.DeserializeObject<List<Result<UpdatesResult>>>(data)[0];
         }
-        private string GetCourseContents(KursResult.Kurs kurs)
+        public string GetCourseContents(KursResult.Kurs kurs)
         {
             //var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_courses\",\"args\":{ \"options\": {\"ids\":[297]} }}]");
             //return data;
@@ -131,7 +139,7 @@ namespace Test
             doc.LoadHtml(html);
             return string.Format(res, doc.GetElementbyId("region-main").OuterHtml);
         }
-        private void SendMessage(int UserId, string msg)
+        public void SendMessage(int UserId, string msg)
         {
             var obj = new MessageSendMethodCall();
             obj.args = new MessageSendMethodCall.Args();
@@ -143,7 +151,7 @@ namespace Test
                 throw new Exception();
             }
         }
-        private void DownloadCourseData(KursResult.Kurs kurs, string DirectoryPath)
+        public void DownloadCourseData(KursResult.Kurs kurs, string DirectoryPath)
         {
             if (!Directory.Exists(DirectoryPath))
             {
@@ -201,8 +209,39 @@ namespace Test
         {
             return string.Join(" ", filename.Split(Path.GetInvalidFileNameChars()));
         }
+        public Image GetProfileImage(MoodleUser user)
+        {
+            var wc = new WebClient();
+            wc.Headers.Set(HttpRequestHeader.Cookie, Cookies.GetCookieHeader(new Uri($"https://{Host}")));
+            try
+            {
+                return new Bitmap(new MemoryStream(wc.DownloadData(user.ImageUrl)));
+            }
+            catch
+            {
+                return new Bitmap(1, 1);
+            }
+        }
+        public List<MoodleUser> GetOnlineUsers()
+        {
+            var ret = new List<MoodleUser>();
+            var html = UploadData($"https://{Host}/moodle/my/", null);
+            ExtractSessionKey(html);
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(html);
+            var UserLinks = doc.DocumentNode.SelectNodes("//section[contains(@class, 'block_online_users')]")[0].SelectNodes(".//a").Where(x => x.GetAttributeValue("href", "").Contains("/user/view.php?id="));
+            foreach(HtmlNode UserLink in UserLinks)
+            {
+                var id = Regex.Match(UserLink.GetAttributeValue("href", ""), @"\?id=([0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase).Groups[1].Value;
+                var user = new MoodleUser(UserLink.InnerText, int.Parse(id));
+                user.ImageUrl = new Uri(UserLink.Element("img").GetAttributeValue("src", "").Replace("f2", "f3"));
+                user.LastOnline = UserLink.GetAttributeValue("title", "");
+                ret.Add(user);
+            }
+            return ret;
+        }
 
-        class MessageSendMethodCall
+        public class MessageSendMethodCall
         {
             public int index = 0;
             public string methodname = "core_message_send_instant_messages";
@@ -257,16 +296,20 @@ namespace Test
         {
             public string Name;
             public int Id;
+            public Uri ImageUrl;
+            public string LastOnline;
             public MoodleUser(string Name, int Id)
             {
                 this.Name = Name;
                 this.Id = Id;
+                ImageUrl = null;
+                LastOnline = null;
             }
         }
 
         #region TypeDefinitions
         [JsonObject()]
-        private struct Result<T>
+        public struct Result<T>
         {
             [JsonProperty("error")]
             public bool Error { get; set; }
@@ -319,7 +362,7 @@ namespace Test
         }
         #endregion
         #region Request Functions
-        private string UploadData(string url, NameValueCollection postdata, bool json = false)
+        public string UploadData(string url, NameValueCollection postdata, bool json = false)
         {
             try
             {
@@ -361,7 +404,7 @@ namespace Test
             }
             catch { return null; }
         }
-        private string JsonRPC(string url, string body)
+        public string JsonRPC(string url, string body)
         {
             try
             {   
@@ -455,6 +498,38 @@ namespace Test
                 Directory.CreateDirectory(dir);
             }
             DownloadCourseData(CurrentKurs, dir);
+        }
+
+        private void Form2_Load(object sender, EventArgs e)
+        {
+            Site1.BringToFront();
+        }
+
+        private void listView2_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if(listView2.SelectedItems.Count != 1)
+            {
+                return;
+            }
+            new UserDisplay((MoodleUser)listView2.SelectedItems[0].Tag, this).ShowDialog();
+        }
+
+        private void zurückToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Site2.BringToFront();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            listView2.Items.Clear();
+            foreach (var user in GetOnlineUsers())
+            {
+                var listitem = new ListViewItem();
+                listitem.Text = user.Name;
+                listitem.SubItems.Add(user.LastOnline);
+                listitem.Tag = user;
+                listView2.Items.Add(listitem);
+            }
         }
     }
 }
