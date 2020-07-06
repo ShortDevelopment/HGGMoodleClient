@@ -30,7 +30,9 @@ You can find the client logic in <a href="Form2.cs">Form2.vb</a>.
 ## Moodle Endpoint Documentation
 ### All Functions
 https://docs.moodle.org/dev/Web_service_API_functions#Core_web_service_functions <br/>
-<b>Important!</b> Is function "<i>Available</i> [for] <i>AJAX</i>"?
+<b>Important!</b> Is function "<i>Available</i> [for] <i>AJAX</i>"?<br/>
+You can try to use this endpoint to check if you can also use all <b>none-ajax</b> functions:<br/>
+`https://moodle.hgg-online.de/moodle/login/token.php?username=<User>&password=<Password>&service=moodle_mobile_app`<br/>
 ### Paramater Documentation
 https://github.com/moodle/moodle <br/>
 Search for "<i>externallib.php</i>" file<i>s</i>. There you can find the paramteter declaration.<br/>
