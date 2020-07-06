@@ -27,12 +27,19 @@ You can find the client logic in <a href="Form2.cs">Form2.vb</a>.
   <li>Look at (Big!) profile photo</li>
 </ol>
 
+## Check if you can access the offical api
+You can try to use this endpoint to check if you can also use all <b>none-ajax</b> functions:<br/>
+`https://{$Host}/moodle/login/token.php?username=<User>&password=<Password>&service=moodle_mobile_app`<br/>
+If it succedes, you can use the offical api with the following endpoint: `https://{$Host}/moodle/webservice/rest/server.php?...`<br/>
+<a href="https://docs.moodle.org/dev/Creating_a_web_service_client">Go to Moodle Dokumentation</a><br/>
+<p><b>Else</b></p>
+<i>Read on...</i>
+
 ## Moodle Endpoint Documentation
 ### All Functions
 https://docs.moodle.org/dev/Web_service_API_functions#Core_web_service_functions <br/>
 <b>Important!</b> Is function "<i>Available</i> [for] <i>AJAX</i>"?<br/>
-You can try to use this endpoint to check if you can also use all <b>none-ajax</b> functions:<br/>
-`https://{$Host}/moodle/login/token.php?username=<User>&password=<Password>&service=moodle_mobile_app`<br/>
+
 ### Paramater Documentation
 https://github.com/moodle/moodle <br/>
 Search for "<i>externallib.php</i>" file<i>s</i>. There you can find the paramteter declaration.<br/>
