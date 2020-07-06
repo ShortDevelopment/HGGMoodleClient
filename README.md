@@ -29,7 +29,7 @@ You can find the client logic in <a href="Form2.cs">Form2.vb</a>.
 
 ## Moodle Endpoint Documentation
 ### All Functions
-https://docs.moodle.org/dev/Web_service_API_functions <br/>
+https://docs.moodle.org/dev/Web_service_API_functions#Core_web_service_functions <br/>
 <b>Important!</b> Is function "<i>Available</i> [for] <i>AJAX</i>"?
 ### Paramater Documentation
 https://github.com/moodle/moodle <br/>
