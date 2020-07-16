@@ -1,8 +1,8 @@
 # HGGMoodleClient
 
-A client written c# that can access the (unoffical) <a href="https://moodle.org/">moodle</a> api (even if the administrator has disabled the offical api) using "html-parsing" and json-rpc.<br/>
+A client written c# (WindowsForms) that can access the (unoffical) <a href="https://moodle.org/">moodle</a> api (even if the administrator has disabled the offical api) using "html-parsing" and json-rpc.<br/>
 <br/>
-You can find the client logic in <a href="Form2.cs">Form2.vb</a>.
+You can find the client logic in <a href="Form2.cs">Form2.cs</a>.
 
 ## Usage
 <ol>
@@ -27,10 +27,19 @@ You can find the client logic in <a href="Form2.cs">Form2.vb</a>.
   <li>Look at (Big!) profile photo</li>
 </ol>
 
+## Check if you can access the offical api
+You can try to use this endpoint to check if you can also use all <b>none-ajax</b> functions:<br/>
+`https://{$Host}/moodle/login/token.php?username=<User>&password=<Password>&service=moodle_mobile_app`<br/>
+If it succedes, you can use the offical api with the following endpoint: `https://{$Host}/moodle/webservice/rest/server.php?...`<br/>
+<a href="https://docs.moodle.org/dev/Creating_a_web_service_client">Go to Moodle Dokumentation</a><br/>
+<p><b>Else</b></p>
+<i>Read on...</i>
+
 ## Moodle Endpoint Documentation
 ### All Functions
-https://docs.moodle.org/dev/Web_service_API_functions <br/>
-<b>Important!</b> Is function "<i>Available</i> [for] <i>AJAX</i>"?
+https://docs.moodle.org/dev/Web_service_API_functions#Core_web_service_functions <br/>
+<b>Important!</b> Is function "<i>Available</i> [for] <i>AJAX</i>"?<br/>
+
 ### Paramater Documentation
 https://github.com/moodle/moodle <br/>
 Search for "<i>externallib.php</i>" file<i>s</i>. There you can find the paramteter declaration.<br/>
