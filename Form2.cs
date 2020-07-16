@@ -40,6 +40,7 @@ namespace Test
                 foreach (var kurs in AllKurse)
                 {
                     listBox1.Items.Add(kurs.FullName);
+                    GetUpdateSince(kurs, DateTime.Now.AddDays(-1));
                     //textBox3.Text += kurs.FullName + "   " + kurs.Id.ToString() + Environment.NewLine;
                     //textBox5.Text += $"======= \"{kurs.FullName}\" =======" + Environment.NewLine;
                     //foreach(var user in GetCourseUsers(kurs))
@@ -126,6 +127,7 @@ namespace Test
         public Result<UpdatesResult> GetUpdateSince(KursResult.Kurs kurs, DateTime timestamp)
         {
             var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_updates_since\",\"args\":{\"courseid\":" + kurs.Id.ToString() + ",\"since\":" + GetTimestamp(timestamp) + "}}]");
+            Debug.Print(data);
             return JsonConvert.DeserializeObject<List<Result<UpdatesResult>>>(data)[0];
         }
         public string GetCourseContents(KursResult.Kurs kurs)
@@ -229,15 +231,19 @@ namespace Test
             ExtractSessionKey(html);
             var doc = new HtmlAgilityPack.HtmlDocument();
             doc.LoadHtml(html);
-            var UserLinks = doc.DocumentNode.SelectNodes("//section[contains(@class, 'block_online_users')]")[0].SelectNodes(".//a").Where(x => x.GetAttributeValue("href", "").Contains("/user/view.php?id="));
-            foreach(HtmlNode UserLink in UserLinks)
+            try
             {
-                var id = Regex.Match(UserLink.GetAttributeValue("href", ""), @"\?id=([0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase).Groups[1].Value;
-                var user = new MoodleUser(UserLink.InnerText, int.Parse(id));
-                user.ImageUrl = new Uri(UserLink.Element("img").GetAttributeValue("src", "").Replace("f2", "f3"));
-                user.LastOnline = UserLink.GetAttributeValue("title", "");
-                ret.Add(user);
+                var UserLinks = doc.DocumentNode.SelectNodes("//section[contains(@class, 'block_online_users')]")[0].SelectNodes(".//a").Where(x => x.GetAttributeValue("href", "").Contains("/user/view.php?id="));
+                foreach (HtmlNode UserLink in UserLinks)
+                {
+                    var id = Regex.Match(UserLink.GetAttributeValue("href", ""), @"\?id=([0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase).Groups[1].Value;
+                    var user = new MoodleUser(UserLink.InnerText, int.Parse(id));
+                    user.ImageUrl = new Uri(UserLink.Element("img").GetAttributeValue("src", "").Replace("f2", "f3"));
+                    user.LastOnline = UserLink.GetAttributeValue("title", "");
+                    ret.Add(user);
+                }
             }
+            catch { }
             return ret;
         }
 
