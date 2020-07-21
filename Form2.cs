@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -29,7 +30,7 @@ namespace Test
         private string SessionKey;
         private List<KursResult.Kurs> AllKurse;
         private WaitDialog WaitDialog = new WaitDialog();
-        private void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, System.EventArgs e)
         {
             client.Encoding = Encoding.UTF8;
             Application.DoEvents();
@@ -40,7 +41,7 @@ namespace Test
                 foreach (var kurs in AllKurse)
                 {
                     listBox1.Items.Add(kurs.FullName);
-                    GetUpdateSince(kurs, DateTime.Now.AddDays(-1));
+                    //GetUpdateSince(kurs, DateTime.Now.AddDays(-1));
                     //textBox3.Text += kurs.FullName + "   " + kurs.Id.ToString() + Environment.NewLine;
                     //textBox5.Text += $"======= \"{kurs.FullName}\" =======" + Environment.NewLine;
                     //foreach(var user in GetCourseUsers(kurs))
@@ -111,9 +112,9 @@ namespace Test
             var data = JsonRPC($"https://{Host}/moodle/lib/ajax/service.php?sesskey={SessionKey}", "[{\"index\":0,\"methodname\":\"core_course_get_enrolled_courses_by_timeline_classification\",\"args\":{\"offset\":0,\"limit\":100,\"classification\":\"all\",\"sort\":\"fullname\"}}]");
             //textBox3.Text = SessionKey + data;
             var obj = JsonConvert.DeserializeObject<List<Result<KursResult>>>(data);
-            if(obj[0].Error == false)
+            if (obj[0].Error == false)
             {
-                return obj[0].Data.Kurse;                
+                return obj[0].Data.Kurse;
             }
             else
             {
@@ -166,7 +167,7 @@ namespace Test
             var wc = new WebClient();
             wc.Headers.Set(HttpRequestHeader.Cookie, Cookies.GetCookieHeader(new Uri(kurs.URL)));
             var lis = doc.DocumentNode.SelectNodes("//li").Where(x => x.GetAttributeValue("aria-label", null) != null);
-            foreach(HtmlNode li in lis)
+            foreach (HtmlNode li in lis)
             {
                 var title = li.GetAttributeValue("aria-label", null);
                 if (!string.IsNullOrEmpty(title))
@@ -174,38 +175,65 @@ namespace Test
                     var dir = Path.Combine(DirectoryPath, ReplaceInvalidChars(title));
                     Directory.CreateDirectory(dir);
                     var SubLinks = li.SelectNodes(".//a")?.Where(x => x.GetAttributeValue("href", "").Contains("/mod/") && x.GetAttributeValue("href", "").Contains("/view.php?id="));
-                    if(SubLinks == null)
+                    if (SubLinks == null)
                     {
                         continue;
                     }
                     foreach (HtmlNode link in SubLinks)
                     {
-                        html = UploadData(link.GetAttributeValue("href", ""), null);
+                        html = null;
+                        int trials = 0;
+                        while (html == null)
+                        {
+                            if (trials >= 3)
+                                continue;
+                            html = UploadData(link.GetAttributeValue("href", ""), null);
+                            trials++;
+                        }
                         ExtractSessionKey(html);
                         var doc2 = new HtmlAgilityPack.HtmlDocument();
                         doc2.LoadHtml(html);
-                        var files = doc2.DocumentNode.SelectNodes("//a").Where(x => x.GetAttributeValue("href", "").Contains("/pluginfile.php/"));
+                        var ass = doc2.DocumentNode.SelectNodes("//a");
+                        var files = ass.Where(x => x.GetAttributeValue("href", "").ToLower().Contains("/pluginfile.php/"));
                         var dir2 = dir;
-                        if (files.Count() > 1)
+                        if (true || files.Count() > 1)
                         {
-                            dir2 = Path.Combine(dir2, ReplaceInvalidChars(link.InnerText));
-                            Directory.CreateDirectory(dir2);
+                            dir2 = Path.Combine(dir2, ReplaceInvalidChars(link.InnerText.Length > 45 ? link.InnerText.Substring(0, 45) : link.InnerText));
+                            dir2 = Directory.CreateDirectory(dir2).FullName;
                         }
                         foreach (var file in files)
                         {
+                            var href = file.GetAttributeValue("href", "");
                             try
                             {
-                                wc.DownloadFile(file.GetAttributeValue("href", ""), Path.Combine(dir2, file.InnerText));
+                                var filename = string.IsNullOrEmpty(file.InnerText) || string.IsNullOrWhiteSpace(file.InnerText) ? Path.GetFileName(href) : file.InnerText;
+                                var filepath = Path.Combine(dir2, filename);
+                                wc.DownloadFile(href, filepath);
+                                file.SetAttributeValue("href", filename);
+                                file.SetAttributeValue("onclick", "");
                             }
                             catch (Exception ex)
                             {
-                                Debug.Print(ex.Message);
+                                Debug.Print($"[{href}]: {ex.Message}");
                             }
                         }
-                        //https://moodle.hgg-online.de/moodle/pluginfile.php/4366/mod_assign/introattachment/0/4_Writing%20a%20diary%20entry_practice.pdf?forcedownload=1
+                        SaveMainRegion(dir2, doc2.GetElementbyId("region-main").OuterHtml, System.IO.Path.GetDirectoryName(dir2));
+                        link.SetAttributeValue("href", MakeRelative(Path.Combine(dir2, "index.html"), DirectoryPath + @"\"));
+                        link.SetAttributeValue("onclick", "");
                     }
                 }
             }
+            SaveMainRegion(DirectoryPath, doc.GetElementbyId("region-main").OuterHtml, kurs.FullName);
+        }
+        public void SaveMainRegion(string path, string html, string KursName)
+        {
+            File.WriteAllText(Path.Combine(path, "index.html"), "<title>" + KursName + "</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><link href=\"https://moodle.hgg-online.de/moodle/theme/styles.php/boost/1594402493_1594331874/all\" rel=\"stylesheet\" type=\"text/css\">" + html);
+        }
+        public static string MakeRelative(string filePath, string referencePath)
+        {
+            var fileUri = new Uri(filePath);
+            var referenceUri = new Uri(referencePath);
+            return Uri.UnescapeDataString(referenceUri.MakeRelativeUri(fileUri).ToString()).Replace('/', Path.DirectorySeparatorChar);
         }
         public string ReplaceInvalidChars(string filename)
         {
@@ -275,8 +303,8 @@ namespace Test
             var html = UploadData(url, null);
             var doc = new HtmlAgilityPack.HtmlDocument();
             doc.LoadHtml(html);
-            var links = doc.DocumentNode.SelectNodes("//a").Where(x=> x.GetAttributeValue("href", "").Contains("moodle/user/view.php?id="));
-            foreach(HtmlNode link in links)
+            var links = doc.DocumentNode.SelectNodes("//a").Where(x => x.GetAttributeValue("href", "").Contains("moodle/user/view.php?id="));
+            foreach (HtmlNode link in links)
             {
                 try
                 {
@@ -386,14 +414,14 @@ namespace Test
                 WebRequest.Create(url); request.KeepAlive = false;
                 request.ProtocolVersion = HttpVersion.Version10;
                 request.Method = "POST";
-                request.CookieContainer = Cookies;                
+                request.CookieContainer = Cookies;
                 if (json)
                 {
                     request.Headers.Add("X-Requested-With", "XMLHttpRequest");
                     request.Accept = "application/json, text/javascript, */*; q=0.01";
-                }                    
+                }
                 request.Host = Host;
-                request.Referer = url;                
+                request.Referer = url;
                 // turn our request string into a byte stream
                 byte[] postBytes = Encoding.UTF8.GetBytes(str);
 
@@ -413,7 +441,7 @@ namespace Test
         public string JsonRPC(string url, string body)
         {
             try
-            {   
+            {
                 HttpWebRequest request = (HttpWebRequest)
                 WebRequest.Create(url); request.KeepAlive = false;
                 request.ProtocolVersion = HttpVersion.Version10;
@@ -441,7 +469,7 @@ namespace Test
         private KursResult.Kurs CurrentKurs;
         private void listBox1_DoubleClick(object sender, EventArgs e)
         {
-            if(listBox1.SelectedItem == null) { return; }
+            if (listBox1.SelectedItem == null) { return; }
             this.Enabled = false;
             try
             {
@@ -479,7 +507,8 @@ namespace Test
                     SendMessage(user.Id, msg);
                     result += user.Name + Environment.NewLine;
                 }
-                catch {
+                catch
+                {
                     result3 += user.Name + Environment.NewLine;
                 }
             }
@@ -503,7 +532,14 @@ namespace Test
             {
                 Directory.CreateDirectory(dir);
             }
-            DownloadCourseData(CurrentKurs, dir);
+            var t = new Thread(new ThreadStart(delegate
+            {
+                DownloadCourseData(CurrentKurs, dir);
+                menuStrip1.Invoke(new Action(() => WaitDialog.Hide()));
+            }));
+            t.IsBackground = true;
+            t.Start();
+            WaitDialog.ShowDialog();
         }
 
         private void Form2_Load(object sender, EventArgs e)
@@ -513,7 +549,7 @@ namespace Test
 
         private void listView2_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            if(listView2.SelectedItems.Count != 1)
+            if (listView2.SelectedItems.Count != 1)
             {
                 return;
             }
@@ -536,6 +572,49 @@ namespace Test
                 listitem.Tag = user;
                 listView2.Items.Add(listitem);
             }
+        }
+
+        private void textBox2_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyData == Keys.Enter)
+                button1_Click(null, null);
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            var t2 = new Thread(new ThreadStart(delegate
+            {
+                int runningcount = 0;
+                foreach (KursResult.Kurs CurrentKurs in AllKurse)
+                {
+                    var dir = Path.Combine(Application.StartupPath, "download", ReplaceInvalidChars(CurrentKurs.Name));
+                    if (!Directory.Exists(dir))
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
+                    runningcount++;
+                    var t = new Thread(new ThreadStart(delegate
+                    {
+                        DownloadCourseData(CurrentKurs, dir);
+                        runningcount--;
+                        if (runningcount <= 0)
+                        {
+                            menuStrip1.Invoke(new Action(() => WaitDialog.Hide()));
+                        }
+                    }));
+                    t.IsBackground = true;
+                    t.Start();
+
+                }
+            }));
+            t2.IsBackground = true;
+            t2.Start();
+            WaitDialog.ShowDialog();
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            button1_Click(sender, e);
         }
     }
 }

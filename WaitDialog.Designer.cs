@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.panel1 = new System.Windows.Forms.Panel();
-            this.label1 = new System.Windows.Forms.Label();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.label1 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -47,16 +47,6 @@
             this.panel1.Size = new System.Drawing.Size(428, 68);
             this.panel1.TabIndex = 0;
             // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(249)))), ((int)(((byte)(128)))), ((int)(((byte)(18)))));
-            this.label1.Location = new System.Drawing.Point(11, 13);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(350, 17);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Bitte warten während die Daten heruntergeladen werden ...";
-            // 
             // progressBar1
             // 
             this.progressBar1.Location = new System.Drawing.Point(11, 43);
@@ -66,9 +56,19 @@
             this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             this.progressBar1.TabIndex = 1;
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(249)))), ((int)(((byte)(128)))), ((int)(((byte)(18)))));
+            this.label1.Location = new System.Drawing.Point(11, 13);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(873, 45);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "Bitte warten während die Daten heruntergeladen werden ...";
+            // 
             // WaitDialog
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(18F, 45F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(428, 68);
             this.Controls.Add(this.panel1);
@@ -76,6 +76,8 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "WaitDialog";
+            this.ShowIcon = false;
+            this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "WaitDialog";
             this.panel1.ResumeLayout(false);
