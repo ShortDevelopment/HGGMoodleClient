@@ -1,3 +1,7 @@
+## New
+Das Ende des Schuljahres steht kurz befor und wer nochmal alle Daten von Moodle sichern will ist hier genau richtig!<br/>
+Da die Daten zum Ende des Schuljahres gelöscht werden, habe ich den Moodle CLient um eine globale Update-Funktion erweitert.<br/>
+Einfach das <a href="https://github.com/ShortDevelopment/HGGMoodleClient/releases/latest">neuste Release downloaden</a>, einloggen und auf "Download All" klicken!
 # HGGMoodleClient
 
 A client written c# (WindowsForms) that can access the (unoffical) <a href="https://moodle.org/">moodle</a> api (even if the administrator has disabled the offical api) using "html-parsing" and json-rpc.<br/>
