@@ -164,12 +164,16 @@ namespace Test
             ExtractSessionKey(html);
             var doc = new HtmlAgilityPack.HtmlDocument();
             doc.LoadHtml(html);
-            var wc = new WebClient();
-            wc.Headers.Set(HttpRequestHeader.Cookie, Cookies.GetCookieHeader(new Uri(kurs.URL)));
-            var lis = doc.DocumentNode.SelectNodes("//li").Where(x => x.GetAttributeValue("aria-label", null) != null);
+            var lis = doc.DocumentNode.SelectNodes("//li").Where(x => x.GetAttributeValue("aria-label", null) != null || x.GetAttributeValue("aria-labelledby", null) != null);
+
             foreach (HtmlNode li in lis)
             {
                 var title = li.GetAttributeValue("aria-label", null);
+                if (string.IsNullOrEmpty(title))
+                {
+                    var titleId = li.GetAttributeValue("aria-labelledby", null);
+                    title = doc.GetElementbyId(titleId)?.InnerText.Trim();
+                }
                 if (!string.IsNullOrEmpty(title))
                 {
                     var dir = Path.Combine(DirectoryPath, ReplaceInvalidChars(title));
@@ -179,7 +183,7 @@ namespace Test
                     {
                         continue;
                     }
-                    foreach (HtmlNode link in SubLinks)
+                    Parallel.ForEach(SubLinks, (link) =>
                     {
                         html = null;
                         int trials = 0;
@@ -201,13 +205,16 @@ namespace Test
                             dir2 = Path.Combine(dir2, ReplaceInvalidChars(link.InnerText.Length > 45 ? link.InnerText.Substring(0, 45) : link.InnerText));
                             dir2 = Directory.CreateDirectory(dir2).FullName;
                         }
-                        foreach (var file in files)
+
+                        Parallel.ForEach(files, (file) =>
                         {
                             var href = file.GetAttributeValue("href", "");
                             try
                             {
                                 var filename = string.IsNullOrEmpty(file.InnerText) || string.IsNullOrWhiteSpace(file.InnerText) ? Path.GetFileName(href) : file.InnerText;
                                 var filepath = Path.Combine(dir2, filename);
+                                var wc = new WebClient();
+                                wc.Headers.Set(HttpRequestHeader.Cookie, Cookies.GetCookieHeader(new Uri(kurs.URL)));
                                 wc.DownloadFile(href, filepath);
                                 file.SetAttributeValue("href", filename);
                                 file.SetAttributeValue("onclick", "");
@@ -216,14 +223,17 @@ namespace Test
                             {
                                 Debug.Print($"[{href}]: {ex.Message}");
                             }
-                        }
+                        });
+
                         SaveMainRegion(dir2, doc2.GetElementbyId("region-main").OuterHtml, System.IO.Path.GetDirectoryName(dir2));
                         link.SetAttributeValue("href", MakeRelative(Path.Combine(dir2, "index.html"), DirectoryPath + @"\"));
                         link.SetAttributeValue("onclick", "");
-                    }
+                    });
                 }
             }
+
             SaveMainRegion(DirectoryPath, doc.GetElementbyId("region-main").OuterHtml, kurs.FullName);
+
         }
         public void SaveMainRegion(string path, string html, string KursName)
         {
@@ -584,28 +594,17 @@ namespace Test
         {
             var t2 = new Thread(new ThreadStart(delegate
             {
-                int runningcount = 0;
-                foreach (KursResult.Kurs CurrentKurs in AllKurse)
+                Parallel.ForEach(AllKurse, (CurrentKurs) =>
                 {
                     var dir = Path.Combine(Application.StartupPath, "download", ReplaceInvalidChars(CurrentKurs.Name));
                     if (!Directory.Exists(dir))
                     {
                         Directory.CreateDirectory(dir);
                     }
-                    runningcount++;
-                    var t = new Thread(new ThreadStart(delegate
-                    {
-                        DownloadCourseData(CurrentKurs, dir);
-                        runningcount--;
-                        if (runningcount <= 0)
-                        {
-                            menuStrip1.Invoke(new Action(() => WaitDialog.Hide()));
-                        }
-                    }));
-                    t.IsBackground = true;
-                    t.Start();
+                    DownloadCourseData(CurrentKurs, dir);
+                });
 
-                }
+                menuStrip1.Invoke(new Action(() => WaitDialog.Hide()));
             }));
             t2.IsBackground = true;
             t2.Start();
